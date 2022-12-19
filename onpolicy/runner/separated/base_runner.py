@@ -128,7 +128,9 @@ class Runner(object):
             train_info = self.trainer[agent_id].train(self.buffer[agent_id])
             train_infos.append(train_info)       
             self.buffer[agent_id].after_update()
-
+        # infos from environment, will be filled in specified runner
+        env_info = {}
+        train_infos.append(env_info)
         return train_infos
 
     def save(self):
@@ -151,7 +153,8 @@ class Runner(object):
                 policy_vnrom_state_dict = torch.load(str(self.model_dir) + '/vnrom_agent' + str(agent_id) + '.pt')
                 self.trainer[agent_id].value_normalizer.load_state_dict(policy_vnrom_state_dict)
 
-    def log_train(self, train_infos, total_num_steps): 
+    def log_train(self, train_infos, total_num_steps):
+        n_agents = 0
         for agent_id in range(self.num_agents):
             for k, v in train_infos[agent_id].items():
                 agent_k = "agent%i/" % agent_id + k
@@ -159,6 +162,14 @@ class Runner(object):
                     wandb.log({agent_k: v}, step=total_num_steps)
                 else:
                     self.writter.add_scalars(agent_k, {agent_k: v}, total_num_steps)
+            n_agents += 1
+
+        for k, v in train_infos[n_agents].items():
+            community_key = "community/" + k
+            if self.use_wandb:
+                wandb.log({community_key: v}, step = total_num_steps)
+            else:
+                self.writter.add_scalars(community_key, {k: v}, total_num_steps)
 
     def log_env(self, env_infos, total_num_steps):
         for k, v in env_infos.items():
