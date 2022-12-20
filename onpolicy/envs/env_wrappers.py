@@ -701,6 +701,11 @@ class DummyVecEnv(ShareVecEnv):
         else:
             raise NotImplementedError
 
+    def get_shared_obs(self, iv_obs):
+        share_obs = [env.get_shared_obs(iv_obs) for env in self.envs]
+        return np.array(share_obs)
+
+
 
 
 class ShareDummyVecEnv(ShareVecEnv):
