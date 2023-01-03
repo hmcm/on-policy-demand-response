@@ -75,9 +75,6 @@ class Runner(object):
                             self.envs.action_space[0],
                             device = self.device)
 
-        if self.model_dir is not None:
-            self.restore()
-
         # algorithm
         self.trainer = TrainAlgo(self.all_args, self.policy, device = self.device)
         
@@ -88,6 +85,8 @@ class Runner(object):
                                         share_observation_space,
                                         self.envs.action_space[0])
 
+        if self.model_dir is not None:
+            self.restore()
     def run(self):
         """Collect training data, perform training updates, and evaluate policy."""
         raise NotImplementedError
