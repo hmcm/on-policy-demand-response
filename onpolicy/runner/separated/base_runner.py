@@ -44,20 +44,24 @@ class Runner(object):
         self.eval_interval = self.all_args.eval_interval
         self.log_interval = self.all_args.log_interval
 
+        # saving best model
+        self.mean_over_eps = self.all_args.mean_over_eps
+        assert(self.mean_over_eps < self.save_interval), "mean_over_eps needs to be smaller than save_interval!"
+        self.best_mean = -np.inf
         # dir
         self.model_dir = self.all_args.model_dir
 
         if self.use_render:
             import imageio
-            self.run_dir = config["run_dir"]
+            self.run_dir = config["save_dir"]
             self.gif_dir = str(self.run_dir / 'gifs')
             if not os.path.exists(self.gif_dir):
                 os.makedirs(self.gif_dir)
         else:
             if self.use_wandb:
-                self.save_dir = str(wandb.run.dir)
+                self.save_dir = config["save_dir"]
             else:
-                self.run_dir = config["run_dir"]
+                self.run_dir = config["save_dir"]
                 self.log_dir = str(self.run_dir / 'logs')
                 if not os.path.exists(self.log_dir):
                     os.makedirs(self.log_dir)
@@ -132,15 +136,16 @@ class Runner(object):
         train_infos.append(env_info)
         return train_infos
 
-    def save(self):
+    def save(self, save_path: str = None):
+        save_dir = self.save_dir if save_path is None else save_path
         for agent_id in range(self.num_agents):
             policy_actor = self.trainer[agent_id].policy.actor
-            torch.save(policy_actor.state_dict(), str(self.save_dir) + "/actor_agent" + str(agent_id) + ".pt")
+            torch.save(policy_actor.state_dict(), str(save_dir) + "/actor_agent" + str(agent_id) + ".pt")
             policy_critic = self.trainer[agent_id].policy.critic
-            torch.save(policy_critic.state_dict(), str(self.save_dir) + "/critic_agent" + str(agent_id) + ".pt")
+            torch.save(policy_critic.state_dict(), str(save_dir) + "/critic_agent" + str(agent_id) + ".pt")
             if self.trainer[agent_id]._use_valuenorm:
                 policy_vnrom = self.trainer[agent_id].value_normalizer
-                torch.save(policy_vnrom.state_dict(), str(self.save_dir) + "/vnrom_agent" + str(agent_id) + ".pt")
+                torch.save(policy_vnrom.state_dict(), str(save_dir) + "/vnrom_agent" + str(agent_id) + ".pt")
 
     def restore(self):
         for agent_id in range(self.num_agents):

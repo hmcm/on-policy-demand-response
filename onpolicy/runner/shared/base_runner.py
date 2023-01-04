@@ -5,6 +5,7 @@ import torch
 from tensorboardX import SummaryWriter
 from onpolicy.utils.shared_buffer import SharedReplayBuffer
 
+
 def _t2n(x):
     """Convert torch tensor to a numpy array."""
     return x.detach().cpu().numpy()
@@ -47,14 +48,19 @@ class Runner(object):
         self.eval_interval = self.all_args.eval_interval
         self.log_interval = self.all_args.log_interval
 
+        # saving best model
+        self.mean_over_eps = self.all_args.mean_over_eps
+        assert(self.mean_over_eps < self.save_interval), "mean_over_eps needs to be smaller than save_interval!"
+        self.best_mean = -np.inf
+
         # dir
         self.model_dir = self.all_args.model_dir
 
         if self.use_wandb:
-            self.save_dir = str(wandb.run.dir)
+            self.save_dir = config["save_dir"]
             self.run_dir = str(wandb.run.dir)
         else:
-            self.run_dir = config["run_dir"]
+            self.run_dir = config["save_dir"]
             self.log_dir = str(self.run_dir / 'logs')
             if not os.path.exists(self.log_dir):
                 os.makedirs(self.log_dir)
@@ -123,15 +129,16 @@ class Runner(object):
         self.buffer.after_update()
         return train_infos
 
-    def save(self):
+    def save(self, save_path: str = None):
         """Save policy's actor and critic networks."""
+        save_dir = self.save_dir if save_path is None else save_path
         policy_actor = self.trainer.policy.actor
-        torch.save(policy_actor.state_dict(), str(self.save_dir) + "/actor.pt")
+        torch.save(policy_actor.state_dict(), str(save_dir) + "/actor.pt")
         policy_critic = self.trainer.policy.critic
-        torch.save(policy_critic.state_dict(), str(self.save_dir) + "/critic.pt")
+        torch.save(policy_critic.state_dict(), str(save_dir) + "/critic.pt")
         if self.trainer._use_valuenorm:
             policy_vnorm = self.trainer.value_normalizer
-            torch.save(policy_vnorm.state_dict(), str(self.save_dir) + "/vnorm.pt")
+            torch.save(policy_vnorm.state_dict(), str(save_dir) + "/vnorm.pt")
 
     def restore(self):
         """Restore policy's networks from a saved model."""
