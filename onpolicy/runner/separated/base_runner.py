@@ -171,7 +171,7 @@ class Runner(object):
         for k, v in train_infos[n_agents].items():
             community_key = "community/" + k
             if self.use_wandb:
-                wandb.log({community_key: v}, step = total_num_steps)
+                wandb.log({community_key: v}, step=total_num_steps)
                 print("\n Logged {} = {}, total_num_steps = {} \n".format(community_key, v, total_num_steps))
             else:
                 self.writter.add_scalars(community_key, {k: v}, total_num_steps)
